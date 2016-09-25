@@ -249,6 +249,13 @@ AreaSelection.prototype = {
         }
     },
 
+    createRectangleArea: function(p0, p2) {
+        this.shape.type='rectangle';
+        this.shape.points = [p0, p2];
+        this.shape.closeShape();
+        this.renderShape();
+    },
+
 
     /**
      * =========================== LISTENERS ===========================

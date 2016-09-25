@@ -180,6 +180,8 @@ CanvasShape.prototype = {
             };
         });
         this.ratio = _furthestFromCenter;
+
+        return this.vectorsFromCenter;
     },
 
     scaleX: 1,
@@ -199,7 +201,7 @@ CanvasShape.prototype = {
     },
 
     getPoints: function() {
-        return this.vectorsFromCenterToPoints(this.vectorsFromCenter);
+        return this.vectorsFromCenterToPoints(this.vectorsFromCenter || this.pointsToVectorsFromCenter() );
     },
 
     removePointsRecursively: function(points, multiple, currentIndex) {
