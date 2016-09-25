@@ -24,8 +24,8 @@ var getAngle = function(intersection, point1, point2) {
     var vRight = Math.pow(point2.x - intersection.x,2) + Math.pow(point2.y - intersection.y,2);
     return Math.acos( (vTop - vRight - vLeft ) / (-2 * Math.sqrt(vLeft) * Math.sqrt(vRight)) ) * 180 / Math.PI;
 };
-var getClickCoordinates= function(e) {
-    var _offset = offset(e.currentTarget);
+var getClickCoordinates= function(e, parentEl) {
+    var _offset = offset(parentEl || e.currentTarget);
     return {
         x: e.pageX - _offset.left,
         y: e.pageY - _offset.top
@@ -704,7 +704,7 @@ AreaSelection.prototype = {
         },
 
         onMousemove: function(e) {
-            var coords = getClickCoordinates(e);
+            var coords = getClickCoordinates(e, this.canvasWrapper);
             if ( this.selectedAnchor > -1 || this.shape.selected ) {
 
                 // should stop

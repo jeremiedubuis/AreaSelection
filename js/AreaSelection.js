@@ -362,7 +362,7 @@ AreaSelection.prototype = {
         },
 
         onMousemove: function(e) {
-            var coords = getClickCoordinates(e);
+            var coords = getClickCoordinates(e, this.canvasWrapper);
             if ( this.selectedAnchor > -1 || this.shape.selected ) {
 
                 // should stop
