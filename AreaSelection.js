@@ -355,7 +355,7 @@ var _defaults = {
 
 
 AreaSelection = function(wrapper, canvas, options) {
-    this.init(wrapper, canvas);
+    this.init(wrapper, canvas, options);
 };
 
 AreaSelection.prototype = {
