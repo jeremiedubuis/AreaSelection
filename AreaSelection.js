@@ -317,6 +317,8 @@ CanvasShape.prototype = {
     export: function() {
         return {
             type: this.type,
+            canvasWidth: this.canvas.width,
+            canvasHeight: this.canvas.height,
             points: this.vectorsFromCenter,
             pointsFromBoundaries: this.pointsFromBoundaries(),
             ratio: this.ratio,
@@ -358,7 +360,13 @@ AreaSelection = function(wrapper, canvas, options) {
 
 AreaSelection.prototype = {
 
-    init: function(wrapper, canvas) {
+    init: function(wrapper, canvas, options) {
+
+        var _defaults = {
+            onRender: function() {},
+            renderTimeout: 50
+        };
+        this.o = extend(_defaults, options);
         this.canvasWrapper = wrapper;
         this.canvas = canvas;
         this.c2d = canvas.getContext('2d');
@@ -526,6 +534,16 @@ AreaSelection.prototype = {
         this.drawPath(points);
         this.renderPoints(points);
         if (!keepSelecting) this.addListeners('transformation');
+
+        if (!this.renderFlag) {
+            var _this = this;
+            this.renderFlag = true;
+            clearTimeout(this.renderTimeout);
+            this.renderTimeout = setTimeout(function() {
+                _this.renderFlag = false;
+            }, this.o.renderTimeout);
+            this.o.onRender();
+        }
     },
 
     renderBackground: function() {
