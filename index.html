@@ -39,7 +39,7 @@
     <li><button class="js-export">Export</button></li>
 </ul>
 
-<script src="AreaSelection.js"></script>
+<script src="js/AreaSelection.build.js"></script>
 <script type="text/javascript">
     var imgWrapper = document.getElementsByClassName('image-wrapper')[0];
     var imgCanvas = imgWrapper.getElementsByClassName('canvas-image')[0];
@@ -61,7 +61,7 @@
         aS.startSelection('freehand');
     });
     document.getElementsByClassName('js-export')[0].addEventListener('click', function() {
-        console.log(aS.shape.export());
+        console.log(aS.export());
     });
 </script>
 

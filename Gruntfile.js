@@ -12,7 +12,7 @@ module.exports = function(grunt){
                     'js/AreaSelection.js',
                     'js/outro.js'
                 ],
-                dest: 'AreaSelection.js',
+                dest: 'js/AreaSelection.build.js',
             },
         },
 

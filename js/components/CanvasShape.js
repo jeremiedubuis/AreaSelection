@@ -4,13 +4,14 @@
  * ================================================================================
  */
 
-var CanvasShape = function(bounds1, bounds2) {
-    this.init(bounds1, bounds2);
+var CanvasShape = function(bounds1, bounds2, type) {
+    this.init(bounds1, bounds2, type);
 };
 
 CanvasShape.prototype = {
+    init: function(bounds1, bounds2, type) {
 
-    init: function(bounds1, bounds2) {
+        this.type = type;
         this.points = [];
         if (bounds1 && bounds2) this.boundaries = [bounds1,bounds2]
     },
@@ -31,23 +32,22 @@ CanvasShape.prototype = {
     },
 
     move: function(amountHorizontal,amountVertical) {
+
         if (this.boundaries) {
-            var _outOfBounds;
+            var _outOfBoundsX;
+            var _outOfBoundsY;
             var x;
             var y;
             for (var i = 0, j = this.points.length; i<j; ++i) {
                 x = this.points[i].x + amountHorizontal;
                 y = this.points[i].y + amountVertical;
-                if ( x < this.boundaries[0].x || x> this.boundaries[1].x ||
-                    y < this.boundaries[0].y || y > this.boundaries[1].y) {
-                    _outOfBounds = true;
-                    break;
-                }
+                if ( x < this.boundaries[0].x || x> this.boundaries[1].x  ) _outOfBoundsX = true
+                if ( y < this.boundaries[0].y || y > this.boundaries[1].y ) _outOfBoundsY = true;
             }
         }
-        if (_outOfBounds) return false;
-        this.center.x += amountHorizontal;
-        this.center.y += amountVertical;
+
+        if (!_outOfBoundsX) this.center.x += amountHorizontal;
+        if (!_outOfBoundsY) this.center.y += amountVertical;
     },
 
     scaleRectByAnchor: function(pointIndex, coordinates) {
@@ -128,7 +128,6 @@ CanvasShape.prototype = {
 
         var point1;
         var point2;
-
         for (var i=0, length = this.points.length; i<length; ++i) {
 
             point1 = this.points[i];
@@ -146,24 +145,17 @@ CanvasShape.prototype = {
             }
 
         }
+
         // Return true if count is odd, false otherwise
         return _count&1;  // Same as (count%2 == 1)
     },
 
-    _intersectsWithPolygonEdge: function(point,limit, a1, a2) {
-
-        return 0;
-    },
-
     pointsToVectorsFromCenter: function() {
-
         var _this = this;
         var _furthestFromCenter;
         var _dist;
         var points = this.points;
-
         this.vectorsFromCenter = [];
-
         points.forEach(function(_point) {
             _dist = _this.distanceFromCenter(_point)
             if (typeof _furthestFromCenter === 'undefined' || _dist > _furthestFromCenter) _furthestFromCenter = _dist;
@@ -172,6 +164,8 @@ CanvasShape.prototype = {
                 y:_this.distanceYFromCenter(_point)
             })
         });
+
+        _furthestFromCenter = Math.max(_furthestFromCenter,1);
 
         this.vectorsFromCenter = _this.vectorsFromCenter.map(function(_point) {
             return {
@@ -201,7 +195,7 @@ CanvasShape.prototype = {
     },
 
     getPoints: function() {
-        return this.vectorsFromCenterToPoints(this.vectorsFromCenter || this.pointsToVectorsFromCenter() );
+        return this.vectorsFromCenterToPoints( this.vectorsFromCenter || this.pointsToVectorsFromCenter() );
     },
 
     removePointsRecursively: function(points, multiple, currentIndex) {

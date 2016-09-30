@@ -52,6 +52,13 @@ var pointOnSegment= function(point, a1 , a2) {
 
     return false;
 };
+var polyfillLineDash = function( canvasContext ) {
+    if (!canvasContext.setLineDash) {
+        canvasContext.setLineDash = function() {};
+    }
+
+    return canvasContext;
+};
 var segmentsIntersect = function(a1,a2, b1,b2) {
 
     // Find the four orientations needed for general and
@@ -104,13 +111,14 @@ var vectorLength = function(coords1, coords2) {
  * ================================================================================
  */
 
-var CanvasShape = function(bounds1, bounds2) {
-    this.init(bounds1, bounds2);
+var CanvasShape = function(bounds1, bounds2, type) {
+    this.init(bounds1, bounds2, type);
 };
 
 CanvasShape.prototype = {
+    init: function(bounds1, bounds2, type) {
 
-    init: function(bounds1, bounds2) {
+        this.type = type;
         this.points = [];
         if (bounds1 && bounds2) this.boundaries = [bounds1,bounds2]
     },
@@ -131,23 +139,22 @@ CanvasShape.prototype = {
     },
 
     move: function(amountHorizontal,amountVertical) {
+
         if (this.boundaries) {
-            var _outOfBounds;
+            var _outOfBoundsX;
+            var _outOfBoundsY;
             var x;
             var y;
             for (var i = 0, j = this.points.length; i<j; ++i) {
                 x = this.points[i].x + amountHorizontal;
                 y = this.points[i].y + amountVertical;
-                if ( x < this.boundaries[0].x || x> this.boundaries[1].x ||
-                    y < this.boundaries[0].y || y > this.boundaries[1].y) {
-                    _outOfBounds = true;
-                    break;
-                }
+                if ( x < this.boundaries[0].x || x> this.boundaries[1].x  ) _outOfBoundsX = true
+                if ( y < this.boundaries[0].y || y > this.boundaries[1].y ) _outOfBoundsY = true;
             }
         }
-        if (_outOfBounds) return false;
-        this.center.x += amountHorizontal;
-        this.center.y += amountVertical;
+
+        if (!_outOfBoundsX) this.center.x += amountHorizontal;
+        if (!_outOfBoundsY) this.center.y += amountVertical;
     },
 
     scaleRectByAnchor: function(pointIndex, coordinates) {
@@ -228,7 +235,6 @@ CanvasShape.prototype = {
 
         var point1;
         var point2;
-
         for (var i=0, length = this.points.length; i<length; ++i) {
 
             point1 = this.points[i];
@@ -246,24 +252,17 @@ CanvasShape.prototype = {
             }
 
         }
+
         // Return true if count is odd, false otherwise
         return _count&1;  // Same as (count%2 == 1)
     },
 
-    _intersectsWithPolygonEdge: function(point,limit, a1, a2) {
-
-        return 0;
-    },
-
     pointsToVectorsFromCenter: function() {
-
         var _this = this;
         var _furthestFromCenter;
         var _dist;
         var points = this.points;
-
         this.vectorsFromCenter = [];
-
         points.forEach(function(_point) {
             _dist = _this.distanceFromCenter(_point)
             if (typeof _furthestFromCenter === 'undefined' || _dist > _furthestFromCenter) _furthestFromCenter = _dist;
@@ -272,6 +271,8 @@ CanvasShape.prototype = {
                 y:_this.distanceYFromCenter(_point)
             })
         });
+
+        _furthestFromCenter = Math.max(_furthestFromCenter,1);
 
         this.vectorsFromCenter = _this.vectorsFromCenter.map(function(_point) {
             return {
@@ -301,7 +302,7 @@ CanvasShape.prototype = {
     },
 
     getPoints: function() {
-        return this.vectorsFromCenterToPoints(this.vectorsFromCenter || this.pointsToVectorsFromCenter() );
+        return this.vectorsFromCenterToPoints( this.vectorsFromCenter || this.pointsToVectorsFromCenter() );
     },
 
     removePointsRecursively: function(points, multiple, currentIndex) {
@@ -358,6 +359,7 @@ AreaSelection = function(wrapper, canvas, options) {
 
 AreaSelection.prototype = {
 
+    shapes: [],
     init: function(wrapper, canvas, options) {
 
         var _defaults = {
@@ -369,11 +371,10 @@ AreaSelection.prototype = {
         this.canvas = canvas;
         this.c2d = canvas.getContext('2d');
 
-        this.polyfill();
+        polyfillLineDash(this.c2d);
 
         this.setSize();
         this.bindMethods();
-        this.shape = new CanvasShape({x: 0, y:0}, {x:this.canvas.width, y: this.canvas.height});
     },
 
     setSize: function() {
@@ -400,8 +401,8 @@ AreaSelection.prototype = {
     },
 
     startSelection: function(type) {
-        this.resetSelection();
-        this.shape.type = type;
+        this.shapes.push(new CanvasShape({x: 0, y:0}, {x:this.canvas.width, y: this.canvas.height}, type) );
+        this.currentShape = this.shapes[this.shapes.length-1];
         this.addListeners('selection');
     },
 
@@ -452,20 +453,17 @@ AreaSelection.prototype = {
 
     },
 
-
-    selectedAnchor: -1,
-
     drawPoint: function(point) {
         this.c2d.beginPath();
         this.c2d.rect(point.x-4, point.y-4, 9, 9);
         this.c2d.stroke();
     },
 
-    drawPath: function(points) {
+    drawPath: function(shape, points) {
 
         this.c2d.save();
         this.c2d.beginPath();
-        switch (this.shape.type) {
+        switch (shape.type) {
             case 'freehand':
 
                 var _point1;
@@ -490,7 +488,7 @@ AreaSelection.prototype = {
                 for (var i=1, length= points.length; i<length; ++i) {
                     this.c2d.lineTo(points[i].x,points[i].y);
                 }
-            break;
+                break;
 
         }
 
@@ -501,7 +499,7 @@ AreaSelection.prototype = {
 
         this.c2d.strokeStyle='white';
 
-        if (this.shape.type !== 'freehand') this.c2d.closePath();
+        if (shape.type !== 'freehand') this.c2d.closePath();
         else if( this.freehandClose) {
             var p1 = points[points.length-1];
             var p2 = points[0];
@@ -520,28 +518,31 @@ AreaSelection.prototype = {
 
     },
 
-    renderPoints: function(points) {
+    renderPoints: function(shape,points) {
         this.c2d.strokeStyle = 'white';
-        if (this.shape.type !=='freehand') points.forEach(this.fn.drawPoint);
+        if (shape.type !=='freehand') points.forEach(this.fn.drawPoint);
     },
 
-    renderShape: function(keepSelecting) {
+    render: function(keepSelecting) {
+        var _this = this;
+        this.renderFlag = true;
+
         this.clearCanvas();
         this.renderBackground();
-        var points = this.shape.getPoints();
-        this.drawPath(points);
-        this.renderPoints(points);
-        if (!keepSelecting) this.addListeners('transformation');
+        this.shapes.forEach(this.renderShape.bind(this));
 
-        if (!this.renderFlag) {
-            var _this = this;
-            this.renderFlag = true;
-            clearTimeout(this.renderTimeout);
-            this.renderTimeout = setTimeout(function() {
-                _this.renderFlag = false;
-            }, this.o.renderTimeout);
-            this.o.onRender();
+        if (!keepSelecting) {
+            if (!this.currentShape) this.currentShape = this.shapes[this.shapes.length-1];
+            this.addListeners('transformation');
         }
+        this.o.onRender();
+    },
+
+    renderShape: function(shape) {
+        if (!shape) shape = this.currentShape;
+        var points = shape.getPoints()
+        this.drawPath(shape, points);
+        this.renderPoints( shape, points);
     },
 
     renderBackground: function() {
@@ -551,7 +552,14 @@ AreaSelection.prototype = {
     },
 
     resetSelection: function() {
-        if (this.shape) this.shape.points = [];
+        if (this.currentShape) this.currentShape.points = [];
+        this.clearCanvas();
+        this.render();
+        this.removeListeners();
+    },
+
+    reset: function() {
+        this.shapes = [];
         this.clearCanvas();
         this.removeListeners();
     },
@@ -562,56 +570,80 @@ AreaSelection.prototype = {
 
     scaleShape: function(amount) {
         this.shape.scale(amount);
-        this.renderShape();
+        this.render();
     },
 
-    selectAnchor: function(_index) {
+    selectAnchor: function(shape, _index) {
         this.deselectAnchors(true);
-        this.selectedAnchor = _index;
-        this.shape.points[_index].selected = true;
-        this.renderShape();
+        this.selectedAnchor = {
+            shape: shape,
+            index: _index
+        };
+        this.render();
     },
 
     deselectAnchors: function(noRender) {
-        this.shape.points.map(function(point) {
-            point.selected = false;
-            return point;
-        });
-        this.selectedAnchor = -1;
-        if (!noRender) this.renderShape();
+        this.selectedAnchor = null;
+        if (!noRender) this.render();
     },
 
     setCursor: function(coords) {
         var _this = this;
-        var _previousCursor = _this.canvas.style.cursor = this.shape.containsPoint(coords) ? 'pointer' : 'auto';
-
-        if (this.shape.type ==='rectangle') {
-            var _match;
-            for (var i = 0, j = this.shape.points.length; i<j; ++i) {
-                if ( coordinatesMatchInRange(coords, this.shape.points[i], 5) ) {
-                    switch (i) {
-                        case 0:
-                        case 2:
-                            _this.canvas.style.cursor = 'NW-Resize';
-                            break;
-                        case 1:
-                        case 3:
-                            _this.canvas.style.cursor = 'NE-Resize';
-                            break;
+        var _hoveredShape = this.findShapeAtCoordinates(coords);
+        var _previousCursor = _this.canvas.style.cursor = _hoveredShape ? 'pointer' : 'auto';
+        if (_hoveredShape) {
+            if ( _hoveredShape.type ==='rectangle') {
+                var _match;
+                for (var i = 0, j = _hoveredShape.points.length; i<j; ++i) {
+                    if ( coordinatesMatchInRange(coords, _hoveredShape.points[i], 5) ) {
+                        switch (i) {
+                            case 0:
+                            case 2:
+                                _this.canvas.style.cursor = 'NW-Resize';
+                                break;
+                            case 1:
+                            case 3:
+                                _this.canvas.style.cursor = 'NE-Resize';
+                                break;
+                        }
+                        _match = i;
+                        break;
                     }
-                    _match = i;
-                    break;
                 }
+                if (typeof _match === 'undefined') _this.canvas.style.cursor = _previousCursor;
             }
-            if (typeof _match === 'undefined') _this.canvas.style.cursor = _previousCursor;
         }
     },
 
     createRectangleArea: function(p0, p2) {
-        this.shape.type='rectangle';
-        this.shape.points = [p0, p2];
-        this.shape.closeShape();
-        this.renderShape();
+        var _shape = new CanvasShape({x: 0, y:0}, {x:this.canvas.width, y: this.canvas.height}, 'rectangle');
+        this.shapes.push(_shape);
+        _shape.points = [p0, p2];
+        _shape.closeShape();
+        this.render();
+    },
+
+    findPointAtCoordinates: function(coords ) {
+
+        for (var i = this.shapes.length-1; i>=0; --i) {
+            if (this.shapes[i].type === 'rectangle') {
+                for (var k=0, l = this.shapes[i].points.length; k<l; ++k ) {
+                    if ( coordinatesMatchInRange(coords, this.shapes[i].points[k], 10) ) {
+                        return [this.shapes[i], k];
+                    }
+                }
+            }
+        }
+
+        return null;
+
+    },
+
+    findShapeAtCoordinates: function(coords) {
+        for (var i = this.shapes.length-1; i>=0; --i) {
+            if (this.shapes[i].containsPoint(coords)) return this.shapes[i];
+        }
+        return null;
     },
 
 
@@ -622,73 +654,73 @@ AreaSelection.prototype = {
 
         onClick: function(e) {
 
-            if (this.shape.type !== 'rectangle') {
-                this.shape.points.push(getClickCoordinates(e));
-                this.renderPoints(this.shape.points);
+            if (this.currentShape.type !== 'rectangle') {
+                this.currentShape.points.push(getClickCoordinates(e));
+                this.renderPoints(this.currentShape, this.currentShape.points);
             }
         },
 
         onRightClick: function() {
-            if (this.shape.type=='rectangle' && this.shape.points.length <2) {
+            if (this.currentShape.type=='rectangle' && this.currentShape.points.length <2) {
                 this.resetSelection();
             }
-            if (this.shape.type==='polygon') {
-                if (this.shape.points<3) this.resetSelection();
+            if (this.currentShape.type==='polygon') {
+                if (this.currentShape.points<3) this.resetSelection();
                 else {
-                    this.shape.closeShape();
-                    this.renderShape()
+                    this.currentShape.closeShape();
+                    this.render()
                 }
             }
         },
 
         onMousedown: function(e) {
-            if (this.shape.type === 'rectangle' || this.shape.type === 'freehand') {
-                this.selecting = this.shape.type;
+            if (this.currentShape.type === 'rectangle' || this.currentShape.type === 'freehand') {
+                this.selecting = this.currentShape.type;
                 this.freehandClose = null;
-                this.shape.points.push(getClickCoordinates(e));
-                this.renderPoints(this.shape.points);
+                this.currentShape.points.push(getClickCoordinates(e));
+                this.renderPoints(this.currentShape, this.currentShape.points);
             }
         },
 
         onMousemove: function(e) {
             if (this.selecting) {
 
-                if (this.shape.type === 'freehand') {
+                if (this.currentShape.type === 'freehand') {
                     if (!this.freehandTimeout) {
                         var _this = this;
                         this.freehandTimeout = true;
-                        this.shape.points.push(getClickCoordinates(e));
+                        this.currentShape.points.push(getClickCoordinates(e));
                         setTimeout(function() {
                             _this.freehandTimeout =  false;
                         },50);
-                        this.shape.closeShape();
-                        this.renderShape(true);
+                        this.currentShape.closeShape();
+                        this.render(true);
                     }
                 } else {
-                    if (this.shape.points.length === 1) {
-                        this.shape.points.push(getClickCoordinates(e));
-                        this.shape.closeShape();
+                    if (this.currentShape.points.length === 1) {
+                        this.currentShape.points.push(getClickCoordinates(e));
+                        this.currentShape.closeShape();
                     } else {
-                        if (this.shape.type === 'rectangle') this.shape.points = [this.shape.points[0], getClickCoordinates(e)];
-                        else this.shape.points[1] = getClickCoordinates(e);
-                        this.shape.closeShape();
+                        if (this.currentShape.type === 'rectangle') this.currentShape.points = [this.currentShape.points[0], getClickCoordinates(e)];
+                        else this.currentShape.points[1] = getClickCoordinates(e);
+                        this.currentShape.closeShape();
                     }
-                    this.renderShape(true);
+                    this.render(true);
                 }
             }
         },
 
         onMouseup: function() {
             if (this.selecting) {
-                this.selecting = null;
-                if (this.shape.type === 'freehand') {
+                if (this.currentShape.type === 'freehand') {
                     this.freehandClose = true;
-                    this.shape.closeShape();
-                    this.renderShape();
+                    this.currentShape.closeShape();
+                    this.render();
                     this.c2d.closePath();
                 } else {
-                    this.renderShape();
+                    this.render();
                 }
+                this.selecting = null;
             }
         }
 
@@ -698,39 +730,30 @@ AreaSelection.prototype = {
     transformation: {
 
         onMousedown: function(e) {
-            if (this.shape.closed) {
+            if (this.currentShape.closed) {
                 var _this = this;
                 this.coords = getClickCoordinates(e);
 
-                if (this.shape.type ==='rectangle') {
-                    this.shape.points.forEach(function(point, i) {
-                        if ( coordinatesMatchInRange(_this.coords, point, 15) ) {
-                            _this.selectAnchor(i);
-                        }
-                    });
-                }
-
-
-                if (!this.shape.selected && this.selectedAnchor === -1) {
-                    if (this.shape.containsPoint(this.coords)) {
-                        this.shape.selected = true;
-                    }
+                var pointAtCoordinates = this.findPointAtCoordinates( this.coords );
+                if (pointAtCoordinates) _this.selectAnchor(pointAtCoordinates[0], pointAtCoordinates[1]);
+                if (!this.selectedShape && !this.selectedAnchor) {
+                    this.selectedShape = this.findShapeAtCoordinates(this.coords);
                 }
             }
         },
 
         onMousemove: function(e) {
             var coords = getClickCoordinates(e, this.canvasWrapper);
-            if ( this.selectedAnchor > -1 || this.shape.selected ) {
+            if ( this.selectedAnchor || this.selectedShape ) {
 
                 // should stop
-                if (this.selectedAnchor > -1 ) {
-                    this.shape.scaleRectByAnchor( this.selectedAnchor, coords);
-                    this.renderShape();
+                if (this.selectedAnchor  ) {
+                    this.selectedAnchor.shape.scaleRectByAnchor( this.selectedAnchor.index, coords);
+                    this.render();
 
-                } else if (this.shape.selected) {
-                    this.shape.move(coords.x- this.coords.x, coords.y - this.coords.y);
-                    this.renderShape();
+                } else if (this.selectedShape) {
+                    this.selectedShape.move(coords.x- this.coords.x, coords.y - this.coords.y);
+                    this.render();
                 }
 
                 this.coords = coords;
@@ -742,20 +765,20 @@ AreaSelection.prototype = {
         },
 
         onMouseup: function(e) {
-            if (this.selectedAnchor > -1) this.deselectAnchors(true);
-            this.shape.selected = false;
+            if (this.selectedAnchor) this.deselectAnchors(true);
+            this.selectedShape = null;
             this.canvas.style.cursor = 'auto';
         }
     },
 
-    polyfill: function() {
-        if (!this.c2d.setLineDash) {
-            this.c2d.setLineDash = function() {};
-        }
+    export: function() {
+        return this.shapes.map(function(shape) {
+            return shape.export();
+        });
     },
 
     destroy: function() {
-        this.removeListeners();
+        this.reset();
     }
 
 };
