@@ -180,7 +180,7 @@ AreaSelection.prototype = {
         if (shape.type !=='freehand') points.forEach(this.fn.drawPoint);
     },
 
-    render: function(keepSelecting) {
+    render: function(silent) {
         var _this = this;
         this.renderFlag = true;
 
@@ -188,7 +188,7 @@ AreaSelection.prototype = {
         this.renderBackground();
         this.shapes.forEach(this.renderShape.bind(this));
 
-        if (!keepSelecting) {
+        if (!silent) {
             if (!this.currentShape) this.currentShape = this.shapes[this.shapes.length-1];
             this.addListeners('transformation');
         }
@@ -219,6 +219,10 @@ AreaSelection.prototype = {
         this.shapes = [];
         this.clearCanvas();
         this.removeListeners();
+    },
+
+    refresh: function() {
+        this.render(true);
     },
 
     clearCanvas: function() {
