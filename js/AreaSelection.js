@@ -21,7 +21,8 @@ AreaSelection.prototype = {
 
         var _defaults = {
             onRender: function() {},
-            renderTimeout: 50
+            renderTimeout: 50,
+            onMove: function(shape, currentCoords, prevCoords) {}
         };
         this.o = extend(_defaults, options);
         this.canvasWrapper = wrapper;
@@ -411,18 +412,21 @@ AreaSelection.prototype = {
                 if (this.selectedAnchor  ) {
                     this.selectedAnchor.shape.scaleRectByAnchor( this.selectedAnchor.index, coords);
                     this.render();
-
-                } else if (this.selectedShape) {
+                    this.onMove(this.selectedAnchor.shape,coords, this.coords);
+                } else if (this.selectedShape,coords) {
                     this.selectedShape.move(coords.x- this.coords.x, coords.y - this.coords.y);
                     this.render();
+                    this.onMove(this.selectedShape,coords, this.coords);
                 }
 
                 this.coords = coords;
             } else {
 
                 this.setCursor(coords);
+                this.onMove(null,coords, this.coords);
 
             }
+
         },
 
         onMouseup: function(e) {
