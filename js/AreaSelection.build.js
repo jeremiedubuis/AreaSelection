@@ -595,7 +595,7 @@ AreaSelection.prototype = {
     setCursor: function(coords) {
         var _this = this;
         var _hoveredShape = this.findShapeAtCoordinates(coords);
-        var _previousCursor = _this.canvas.style.cursor = _hoveredShape ? 'pointer' : 'auto';
+        var _previousCursor = _this.canvasWrapper.style.cursor = _hoveredShape ? 'pointer' : 'auto';
         if (_hoveredShape) {
             if ( _hoveredShape.type ==='rectangle') {
                 var _match;
@@ -604,18 +604,18 @@ AreaSelection.prototype = {
                         switch (i) {
                             case 0:
                             case 2:
-                                _this.canvas.style.cursor = 'NW-Resize';
+                                _this.canvasWrapper.style.cursor = 'NW-Resize';
                                 break;
                             case 1:
                             case 3:
-                                _this.canvas.style.cursor = 'NE-Resize';
+                                _this.canvasWrapper.style.cursor = 'NE-Resize';
                                 break;
                         }
                         _match = i;
                         break;
                     }
                 }
-                if (typeof _match === 'undefined') _this.canvas.style.cursor = _previousCursor;
+                if (typeof _match === 'undefined') _this.canvasWrapper.style.cursor = _previousCursor;
             }
         }
     },
