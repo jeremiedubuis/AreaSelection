@@ -769,12 +769,14 @@ AreaSelection.prototype = {
 
                 // if mouse was down send move event without shape
                 if (this.transformationMousedown) {
-                    this.o.onMove(null,coords, this.coords);
+                    this.o.onMove(null,coords, this.prevCoords);
                 }
 
                 this.setCursor(coords);
 
             }
+            // different from this.coords which is last coords when shape was being selected
+            this.prevCoords = coords;
 
         },
 
