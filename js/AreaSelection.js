@@ -417,13 +417,14 @@ AreaSelection.prototype = {
                     this.selectedShape.move(coords.x- this.coords.x, coords.y - this.coords.y);
                     this.render();
                     this.o.onMove(this.selectedShape,coords, this.coords);
+                } else {
+                    this.o.onMove(null,coords, this.coords);
                 }
 
                 this.coords = coords;
             } else {
 
                 this.setCursor(coords);
-                this.o.onMove(null,coords, this.coords);
 
             }
 
