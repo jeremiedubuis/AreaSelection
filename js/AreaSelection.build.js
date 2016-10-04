@@ -744,6 +744,8 @@ AreaSelection.prototype = {
                 if (!this.selectedShape && !this.selectedAnchor) {
                     this.selectedShape = this.findShapeAtCoordinates(this.coords);
                 }
+
+                this.transformationMousedown = true;
             }
         },
 
@@ -760,12 +762,15 @@ AreaSelection.prototype = {
                     this.selectedShape.move(coords.x- this.coords.x, coords.y - this.coords.y);
                     this.render();
                     this.o.onMove(this.selectedShape,coords, this.coords);
-                } else {
-                    this.o.onMove(null,coords, this.coords);
                 }
 
                 this.coords = coords;
             } else {
+
+                // if mouse was down send move event without shape
+                if (this.transformationMousedown) {
+                    this.o.onMove(null,coords, this.coords);
+                }
 
                 this.setCursor(coords);
 
@@ -777,6 +782,7 @@ AreaSelection.prototype = {
             if (this.selectedAnchor) this.deselectAnchors(true);
             this.selectedShape = null;
             this.canvas.style.cursor = 'auto';
+            this.transformationMousedown = false;
         }
     },
 
