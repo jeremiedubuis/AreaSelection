@@ -285,6 +285,14 @@ AreaSelection.prototype = {
         this.render();
     },
 
+    createFreeArea: function(points) {
+        var _shape = new CanvasShape({x: 0, y:0}, {x:this.canvas.width, y: this.canvas.height}, 'freehand');
+        this.shapes.push(_shape);
+        _shape.points = points;
+        _shape.closeShape();
+        this.render();
+    },
+
     findPointAtCoordinates: function(coords ) {
 
         for (var i = this.shapes.length-1; i>=0; --i) {
