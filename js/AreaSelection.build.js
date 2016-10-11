@@ -318,7 +318,8 @@ CanvasShape.prototype = {
     export: function() {
         return {
             type: this.type,
-            points: this.vectorsFromCenter,
+            points: this.points,
+            vectors: this.vectorsFromCenter,
             ratio: this.ratio,
             center: this.center
         };
