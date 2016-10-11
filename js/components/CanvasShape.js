@@ -212,25 +212,8 @@ CanvasShape.prototype = {
         return {
             type: this.type,
             points: this.vectorsFromCenter,
-            pointsFromBoundaries: this.pointsFromBoundaries(),
             ratio: this.ratio,
             center: this.center
         };
-    },
-
-    /**
-     * This gives per 1 coordinates for points instead of center relative coordinates
-     */
-    pointsFromBoundaries: function() {
-        var points = [];
-        var _this = this;
-
-        this.points.forEach(function(point) {
-            points.push({
-                x: point.x / _this.boundaries[1].x,
-                y: point.y / _this.boundaries[1].y
-            });
-        });
-        return points;
     }
 };
