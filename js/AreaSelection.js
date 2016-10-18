@@ -316,9 +316,15 @@ AreaSelection.prototype = {
         return null;
     },
 
-    rescaleShapesFromCenter: function(scalePercents) {
+    scaleShapesFromCenter: function(scalePercents) {
         this.shapes.forEach(function(shape){
             shape.scalePercents(scalePercents);
+        });
+        this.render(true);
+    },
+    offsetShapes: function(offsetX, offsetY) {
+        this.shapes.forEach(function(shape){
+            shape.move(offsetX, offsetY);
         });
         this.render(true);
     },
