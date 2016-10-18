@@ -210,7 +210,12 @@ AreaSelection.prototype = {
     },
 
     resetSelection: function() {
-        if (this.currentShape) this.currentShape.points = [];
+        if (this.currentShape) {
+            if ( this.shapes.indexOf(this.currentShape) > -1) {
+                this.shapes.splice(this.shapes.indexOf(this.currentShape), 1);
+            }
+        }
+        this.selecting = false;
         this.clearCanvas();
         this.render();
         this.removeListeners();
