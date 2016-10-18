@@ -151,7 +151,7 @@ CanvasShape.prototype = {
         this.closed = true;
     },
 
-    move: function(amountHorizontal,amountVertical) {
+    move: function(amountHorizontal,amountVertical, ignoreBounds) {
 
         if (this.boundaries) {
             var _outOfBoundsX;
@@ -166,8 +166,8 @@ CanvasShape.prototype = {
             }
         }
 
-        if (!_outOfBoundsX) this.center.x += amountHorizontal;
-        if (!_outOfBoundsY) this.center.y += amountVertical;
+        if (!_outOfBoundsX || ignoreBounds) this.center.x += amountHorizontal;
+        if (!_outOfBoundsY || ignoreBounds) this.center.y += amountVertical;
     },
 
     scaleRectByAnchor: function(pointIndex, coordinates) {
@@ -686,9 +686,9 @@ AreaSelection.prototype = {
         });
         this.render(true);
     },
-    offsetShapes: function(offsetX, offsetY) {
+    offsetShapes: function(offsetX, offsetY, ignoreBounds) {
         this.shapes.forEach(function(shape){
-            shape.move(offsetX, offsetY);
+            shape.move(offsetX, offsetY, ignoreBounds);
         });
         this.render(true);
     },

@@ -322,9 +322,9 @@ AreaSelection.prototype = {
         });
         this.render(true);
     },
-    offsetShapes: function(offsetX, offsetY) {
+    offsetShapes: function(offsetX, offsetY, ignoreBounds) {
         this.shapes.forEach(function(shape){
-            shape.move(offsetX, offsetY);
+            shape.move(offsetX, offsetY, ignoreBounds);
         });
         this.render(true);
     },
