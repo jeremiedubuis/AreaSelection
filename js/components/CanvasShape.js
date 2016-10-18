@@ -75,10 +75,34 @@ CanvasShape.prototype = {
     },
 
     scale: function(amountHorizontal, amountVertical) {
+        if (typeof amountVertical === 'undefined') amountVertical = amountHorizontal;
         this.scaleX += amountHorizontal / this.ratio;
         this.scaleY += amountVertical / this.ratio;
         if (this.scaleX<.1) this.scaleX = .1;
         if (this.scaleY<.1) this.scaleY = .1;
+    },
+
+    scalePercents: function(amountHorizontal, amountVertical) {
+        if (typeof amountVertical === 'undefined') amountVertical = amountHorizontal;
+        amountHorizontal = amountHorizontal *.01;
+        amountVertical = amountVertical *.01;
+
+        var _center = this.getCenter();
+        var _distX;
+        var _distY;
+
+        this.points = this.points.map(function(p) {
+            _distX = p.x-_center.x;
+            _distX += _distX * amountHorizontal;
+            p.x = _center.x + _distX;
+            _distY = p.y-_center.y;
+            _distY += _distY * amountVertical;
+            p.y = _center.y + _distY;
+            return p;
+        });
+
+        this.pointsToVectorsFromCenter();
+
     },
 
     polygonScale: function(amountHorizontal, amountVertical) {

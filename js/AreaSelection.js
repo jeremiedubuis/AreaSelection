@@ -198,7 +198,7 @@ AreaSelection.prototype = {
 
     renderShape: function(shape) {
         if (!shape) shape = this.currentShape;
-        var points = shape.getPoints()
+        var points = shape.getPoints();
         this.drawPath(shape, points);
         this.renderPoints( shape, points);
     },
@@ -314,6 +314,13 @@ AreaSelection.prototype = {
             if (this.shapes[i].containsPoint(coords)) return this.shapes[i];
         }
         return null;
+    },
+
+    rescaleShapesFromCenter: function(scalePercents) {
+        this.shapes.forEach(function(shape){
+            shape.scalePercents(scalePercents);
+        });
+        this.render(true);
     },
 
 

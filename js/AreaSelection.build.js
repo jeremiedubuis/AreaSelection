@@ -31,6 +31,19 @@ var getClickCoordinates= function(e, parentEl) {
         y: e.pageY - _offset.top
     };
 };
+var getPointInDirection = function(coords1, coords2, distance) {
+    var fi = Math.atan2(coords2.y - coords1.y, coords2.x - coords1.x);
+    var _deltaX = Math.round( distance* Math.cos(fi) );
+    var _deltaY = Math.round( distance* Math.sin(fi) );
+
+    if ( ( _deltaX > 0 && coords1.x+_deltaX > coords2.x ) || (_deltaX < 0 && coords1.x+_deltaX < coords2.x ) ) _deltaX = coords2.x - coords1.x;
+    if ( ( _deltaY > 0 && coords1.y+_deltaY > coords2.y ) || ( _deltaY < 0 && coords1.y+_deltaY < coords2.y ) ) _deltaY = coords2.y - coords1.y;
+
+
+    coords1.x +=  _deltaX;
+    coords1.y +=  _deltaY;
+    return coords1;
+};
 /**
  * @desc An equivalent to jquery's offset function that allows to get an element's offset to top left corner of document
  * @param  function, [DOM node]
@@ -182,10 +195,34 @@ CanvasShape.prototype = {
     },
 
     scale: function(amountHorizontal, amountVertical) {
+        if (typeof amountVertical === 'undefined') amountVertical = amountHorizontal;
         this.scaleX += amountHorizontal / this.ratio;
         this.scaleY += amountVertical / this.ratio;
         if (this.scaleX<.1) this.scaleX = .1;
         if (this.scaleY<.1) this.scaleY = .1;
+    },
+
+    scalePercents: function(amountHorizontal, amountVertical) {
+        if (typeof amountVertical === 'undefined') amountVertical = amountHorizontal;
+        amountHorizontal = amountHorizontal *.01;
+        amountVertical = amountVertical *.01;
+
+        var _center = this.getCenter();
+        var _distX;
+        var _distY;
+
+        this.points = this.points.map(function(p) {
+            _distX = p.x-_center.x;
+            _distX += _distX * amountHorizontal;
+            p.x = _center.x + _distX;
+            _distY = p.y-_center.y;
+            _distY += _distY * amountVertical;
+            p.y = _center.y + _distY;
+            return p;
+        });
+
+        this.pointsToVectorsFromCenter();
+
     },
 
     polygonScale: function(amountHorizontal, amountVertical) {
@@ -525,7 +562,7 @@ AreaSelection.prototype = {
 
     renderShape: function(shape) {
         if (!shape) shape = this.currentShape;
-        var points = shape.getPoints()
+        var points = shape.getPoints();
         this.drawPath(shape, points);
         this.renderPoints( shape, points);
     },
@@ -641,6 +678,13 @@ AreaSelection.prototype = {
             if (this.shapes[i].containsPoint(coords)) return this.shapes[i];
         }
         return null;
+    },
+
+    rescaleShapesFromCenter: function(scalePercents) {
+        this.shapes.forEach(function(shape){
+            shape.scalePercents(scalePercents);
+        });
+        this.render(true);
     },
 
 
